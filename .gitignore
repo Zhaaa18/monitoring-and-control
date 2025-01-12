@@ -1,33 +1,57 @@
-# Gradle files
-.gradle/
-build/
+#include <WiFi.h>
+#include <Firebase_ESP_Client.h>
 
-# Local configuration file (sdk path, etc)
-local.properties
+// ---- Konfigurasi WiFi ----
+#define WIFI_SSID ""
+#define WIFI_PASSWORD ""
 
-# Log/OS Files
-*.log
+// ---- Konfigurasi Firebase ----
+#define API_KEY ""
+#define DATABASE_URL ""
 
-# Android Studio generated files and folders
-captures/
-.externalNativeBuild/
-.cxx/
-*.apk
-output.json
+// ---- Inisialisasi Firebase ----
+FirebaseData fbdo;
+FirebaseAuth auth;
+FirebaseConfig config;
 
-# IntelliJ
-*.iml
-.idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
+void setup() {
+  // ---- Serial Monitor ----
+  Serial.begin(115200);
 
-# Keystore files
-*.jks
-*.keystore
+  // ---- Koneksi WiFi ----
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Menghubungkan ke WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println("\nTersambung ke WiFi!");
 
-# Google Services (e.g. APIs or Firebase)
-google-services.json
+  // ---- Konfigurasi Firebase ----
+  config.api_key = API_KEY;
+  config.database_url = DATABASE_URL;
+  Firebase.begin(&config, &auth);
+  Firebase.reconnectWiFi(true);
 
-# Android Profiling
-*.hprof
+  Serial.println("Firebase inisialisasi selesai.");
+}
+
+void loop() {
+  if (Firebase.ready()) {
+    Serial.println("Firebase sudah siap!");
+
+    // ---- Kirim Data Random ----
+    float randomData = random(0, 100) + random(0, 100) / 100.0;
+    if (Firebase.RTDB.setFloat(&fbdo, "sensor/dataRandom", randomData)) {
+      Serial.print("Data terkirim: ");
+      Serial.println(randomData);
+    } else {
+      Serial.print("Gagal mengirim data. Error: ");
+      Serial.println(fbdo.errorReason());
+    }
+  } else {
+    Serial.println("Firebase belum siap.");
+  }
+
+  delay(5000);  // Kirim data setiap 5 detik
+}
